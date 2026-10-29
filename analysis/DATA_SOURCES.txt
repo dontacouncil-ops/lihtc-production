@@ -1,0 +1,111 @@
+DATA SOURCES — Partners Update #1 reproduction package
+Every file below comes from a public source. URLs verified live.
+
+================================================================
+1. HUD National LIHTC Database
+   File:   data/LIHTCPUB.xlsx
+   Fields: n_unitsr, li_unitr, yr_pis, yr_alloc, st2020, cnty2020,
+           type, credit, inc_ceil, dda, trgt_* , non_prof
+   Source: U.S. Department of Housing and Urban Development,
+           Office of Policy Development and Research,
+           Low-Income Housing Tax Credit (LIHTC) Property Database,
+           projects placed in service through 2024.
+   URL:    https://www.huduser.gov/portal/datasets/lihtc/property.html
+   Query:  https://www.huduser.gov/lihtc/
+   Dictionary: data/LIHTC_Data_Dictionary_2024.pdf (HUD, in the same ZIP)
+
+================================================================
+2. CBSA / place-type crosswalks (metropolitan / micropolitan / rural)
+
+   PRIMARY SOURCE (public, fixed):
+     U.S. Census Bureau / OMB March 2020 delineation file, list1_2020.xls.
+     Authority: OMB Bulletin No. 20-01, March 6, 2020.
+     URL: https://www2.census.gov/programs-surveys/metro-micro/geographies/reference-files/2020/delineation-files/list1_2020.xls
+     Shipped unmodified as: data/list1_2020_OMB_March2020.xls
+       md5 = 8c7e7feb95afe5bb43d1612d33007bf3
+     Contents: 392 metropolitan + 547 micropolitan statistical areas
+       (939 CBSAs), covering 1,916 counties including territories. (The
+       commonly quoted 384 + 543 excludes the 12 territory CBSAs.)
+
+   DERIVED FILES (deterministic joins of the file above; no modeling):
+     data/cbsa_titles_march2020.csv  (fips, cbsa, cbsa_title, pt)
+       md5 = cfe9ba3317f31ca67d9dc3e0a49946bc
+       County FIPS = FIPS State + FIPS County; pt = metro if the area is a
+       Metropolitan Statistical Area, else micro. One row per county.
+       Used to rank CBSAs by name (Figures 3-4).
+     data/cbsa_march2020.csv  (fips, pt)
+       md5 = 5acabee27612efd76809db0e84de542d
+       The same, reduced to county -> type. Used for place-type figures.
+       Counties in neither list are non-CBSA (rural) and do not appear.
+
+   REBUILD / AUDIT:
+     build_cbsa_crosswalks.do rebuilds BOTH CSVs from
+     list1_2020_OMB_March2020.xls via the documented transform above. It has
+     been verified to reproduce the shipped CSVs exactly (1,916 county rows).
+     You do not need to run it to reproduce Update 1; it is for verification.
+
+================================================================
+3. County population (place-type and CBSA denominators)
+   File:   data/county_pop_2020.csv  (columns: fips, state_name, county_name, pop)
+   Field:  pop = ESTIMATESBASE2020 (April 1, 2020 census base with
+           Count Question Resolution revisions).
+   Source: U.S. Census Bureau, Vintage 2023 County Population Estimates,
+           co-est2023-alldata.csv.
+   URL:    https://www2.census.gov/programs-surveys/popest/datasets/2020-2023/counties/totals/co-est2023-alldata.csv
+
+================================================================
+4. State population (Table 1 and the per-100k state column)
+   File:   data/state_pop_2020.csv   (columns: state_fips, state_name, pop2020)
+   Source: U.S. Census Bureau, 2020 Census, official resident population
+           (April 1, 2020), apportionment counts, Table 2.
+   URL:    https://www2.census.gov/programs-surveys/decennial/2020/data/apportionment/apportionment-2020-table02.pdf
+   Verified SE values: AL 5,024,279; FL 21,538,187; GA 10,711,908;
+                       LA 4,657,757; MS 2,961,279; TN 6,910,840.
+
+================================================================
+5. Renter households — SHIPPED (research-grade denominator)
+   File:   data/county_renter_hh_2020_acs5.csv
+           (columns: fips, county_name, occupied, renter)
+   Field:  renter = B25003_E003 (renter-occupied households).
+   Source: U.S. Census Bureau, American Community Survey 2016-2020
+           5-year estimates, Detailed Table B25003 (Tenure), county level,
+           all 50 states + DC (3,143 counties), from the Table-Based
+           Summary File. No API key required.
+   Data:   https://www2.census.gov/programs-surveys/acs/summary_file/2020/prototype/5YRData/acsdt5y2020-b25003.dat
+   Geos:   https://www2.census.gov/programs-surveys/acs/summary_file/2020/prototype/Geos20205YR.csv
+   Table page (no key): https://data.census.gov/table/ACSDT5Y2020.B25003
+   VALIDATION: county sum of renter households = 43,552,843, identical to
+     the national B25003 row. Each SE state county-sum equals its state
+     B25003 row exactly: AL 581,999; FL 2,680,435; GA 1,377,105;
+     LA 584,328; MS 348,677; TN 882,921.
+   Rationale: units per renter household is the standard denominator in
+     published LIHTC research (McClure, Housing Policy Debate,
+     https://doi.org/10.1080/10511481003738260). See the measurement audit.
+
+================================================================
+Everything else in the do-file is computed from these five sources.
+No value in this package is hand-entered except the six SE state
+populations in section 3 of the do-file, which are transcribed from
+source 4 above and match it digit for digit.
+WHY THE CBSA-BY-UNITS TABLE IS BUILT, NOT DOWNLOADED
+
+The table that ranks CBSAs by LIHTC units does not exist as a published file,
+from HUD or anyone else, and it cannot, because it is specific to this project's
+choices: a 2008-2024 window, N_UNITSR as the unit measure, the March 2020
+delineation, and territory exclusion. HUD publishes the project-level database;
+OMB publishes the county-to-CBSA delineation. The CBSA totals are the join of
+the two. That join is the analysis. Sourcing a pre-made total would just be
+trusting someone else's undocumented version of the same join.
+
+What CAN and now DOES come from fixed public sources:
+  - The units: HUD National LIHTC Database (project-level, public, versioned).
+  - The geography: OMB March 2020 delineation, list1_2020.xls (public, fixed,
+    shipped unmodified with a checksum).
+  - The transform between them: build_cbsa_crosswalks.do, documented and
+    verified to reproduce the shipped crosswalks exactly.
+
+So every INPUT is public and verifiable, and the one STEP that is ours (summing
+HUD units to OMB CBSAs) is transparent, deterministic, and reproducible from the
+shipped script. That is the correct standard for this kind of work: not "download
+a black-box total," but "public inputs + a documented, checkable transform."
+

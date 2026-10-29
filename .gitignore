@@ -1,0 +1,17 @@
+# Stata
+*.log
+*.smcl
+~*.dta
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Office temp files
+~$*.docx
+~$*.xlsx
+~$*.pptx
+
+# Editor
+.vscode/
+.idea/
