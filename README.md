@@ -7,8 +7,7 @@ The Southeast here is the six Sixth District states: Alabama, Florida, Georgia, 
 ## What is in this repository
 
 ```
-partners-update/   The write-up (Word). Update 1 is the opening section of
-                   the Partners Update series document.
+partners-update/   The Update 1 write-up (Word), standalone.
 analysis/          A self-contained reproduction package for Update 1.
     code/          Stata do-files (reproduce_update1.do runs end to end).
     data/          Source files, unmodified as downloaded (all public).
